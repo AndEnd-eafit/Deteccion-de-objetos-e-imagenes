@@ -3,50 +3,51 @@ import yolov5
 import streamlit as st
 import numpy as np
 import pandas as pd
-from ultralytics import YOLO
 
-#import sys
-#sys.path.append('./ultralytics/yolo')
-
-#from utils.checks import check_requirements
-
-
-# load pretrained model
+# Cargar modelo preentrenado
 model = yolov5.load('yolov5s.pt')
-#model = yolov5.load('yolov5nu.pt')
 
-# set model parameters
-model.conf = 0.25  # NMS confidence threshold
-model.iou = 0.45  # NMS IoU threshold
-model.agnostic = False  # NMS class-agnostic
-model.multi_label = False  # NMS multiple labels per box
-model.max_det = 1000  # maximum number of detections per image
+# Configurar parámetros del modelo
+model.conf = 0.25  # Umbral de confianza para NMS
+model.iou = 0.45   # Umbral de IoU para NMS
+model.agnostic = False  # NMS clase-agnóstica
+model.multi_label = False  # NMS múltiples etiquetas por caja
+model.max_det = 1000  # Número máximo de detecciones por imagen
 
-# take a picture with the camera
+# Agregar estilo CSS para las fuentes
+st.markdown("""
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@700&family=Inter:wght@400&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Lexend', sans-serif;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("Detección de Objetos en Imágenes")
 
 with st.sidebar:
-            st.subheader('Parámetros de Configuración')
-            model.iou= st.slider('Seleccione el IoU',0.0, 1.0)
-            st.write('IOU:', model.iou)
+    st.subheader('Parámetros de Configuración')
+    model.iou = st.slider('Seleccione el IoU', 0.0, 1.0)
+    st.write('IOU:', model.iou)
 
 with st.sidebar:
-            model.conf = st.slider('Seleccione el Confidence',0.0, 1.0)
-            st.write('Conf:', model.conf)
+    model.conf = st.slider('Seleccione el Confidence', 0.0, 1.0)
+    st.write('Conf:', model.conf)
 
-
-picture = st.camera_input("Capturar foto",label_visibility='visible' )
+picture = st.camera_input("Capturar foto", label_visibility='visible')
 
 if picture:
-    #st.image(picture)
-
     bytes_data = picture.getvalue()
     cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
   
-    # perform inference
+    # Realizar inferencia
     results = model(cv2_img)
 
-    # parse results
+    # Analizar resultados
     predictions = results.pred[0]
     boxes = predictions[:, :4] 
     scores = predictions[:, 4]
@@ -55,16 +56,15 @@ if picture:
     col1, col2 = st.columns(2)
 
     with col1:
-        # show detection bounding boxes on image
+        # Mostrar cajas de detección en la imagen
         results.render()
-        # show image with detections 
-        st.image(cv2_img, channels = 'BGR')
+        # Mostrar imagen con detecciones 
+        st.image(cv2_img, channels='BGR')
 
     with col2:      
-
-        # get label names
+        # Obtener nombres de etiquetas
         label_names = model.names
-        # count categories
+        # Contar categorías
         category_count = {}
         for category in categories:
             if category in category_count:
@@ -73,12 +73,12 @@ if picture:
                 category_count[category] = 1        
 
         data = []        
-        # print category counts and labels
+        # Imprimir conteos y etiquetas de categorías
         for category, count in category_count.items():
             label = label_names[int(category)]            
-            data.append({"Categoría":label,"Cantidad":count})
-        data2 =pd.DataFrame(data)
+            data.append({"Categoría": label, "Cantidad": count})
+        data2 = pd.DataFrame(data)
         
-        # agrupar los datos por la columna "categoria" y sumar las cantidades
+        # Agrupar los datos por la columna "Categoría" y sumar las cantidades
         df_sum = data2.groupby('Categoría')['Cantidad'].sum().reset_index() 
-        df_sum
+        st.dataframe(df_sum)  # Mostrar DataFrame en la interfaz
