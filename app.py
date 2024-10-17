@@ -82,3 +82,8 @@ if picture:
         # Agrupar los datos por la columna "Categoría" y sumar las cantidades
         df_sum = data2.groupby('Categoría')['Cantidad'].sum().reset_index() 
         st.dataframe(df_sum)  # Mostrar DataFrame en la interfaz
+
+        
+        # Agrupar los datos por la columna "Categoría" y sumar las cantidades
+        df_sum = data2.groupby('Categoría')['Cantidad'].sum().reset_index() 
+        st.dataframe(df_sum)  # Mostrar DataFrame en la interfaz
