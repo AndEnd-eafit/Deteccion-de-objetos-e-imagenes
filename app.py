@@ -1,31 +1,9 @@
-import os
 import streamlit as st
-from bokeh.models.widgets import Button
-from bokeh.models import CustomJS
-from streamlit_bokeh_events import streamlit_bokeh_events
-from PIL import Image
-import time
-import paho.mqtt.client as paho
-import json
-from googletrans import Translator
-
-# Función de callback cuando se publica un mensaje
-def on_publish(client, userdata, result):
-    print("El dato ha sido publicado \n")
-    pass
-
-# Función de callback para la recepción de mensajes
-def on_message(client, userdata, message):
-    global message_received
-    time.sleep(2)
-    message_received = str(message.payload.decode("utf-8"))
-    st.write(message_received)
-
-# Configuración de MQTT
-broker = "broker.mqttdashboard.com"
-port = 1883
-client1 = paho.Client("GIT-HUB")
-client1.on_message = on_message
+import cv2
+import numpy as np
+from PIL import Image as Image, ImageOps as ImagOps
+from keras.models import load_model
+import platform
 
 # Agregar estilo CSS para las fuentes y centrar la imagen
 st.markdown("""
@@ -44,65 +22,53 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("INTERFACES MULTIMODALES")
-st.subheader("CONTROL POR VOZ")
+# Muestra la versión de Python junto con detalles adicionales
+st.write("Versión de Python:", platform.python_version())
 
-# Mostrar imagen centrada
-image = Image.open('voice_ctrl.jpg')
+# Cargar el modelo preentrenado
+model = load_model('keras_model.h5')
+data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+
+# Título de la aplicación con la tipografía cambiada
+st.title("Reconocimiento de Imágenes")
+
+# Cargar y mostrar una imagen PNG centrada
+image = Image.open('OIG5.jpg')
 st.markdown('<div class="center-img">', unsafe_allow_html=True)
-st.image(image, width=200)
+st.image(image, width=350)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Botón y reconocimiento de voz
-st.write("Toca el Botón y habla")
+# Sidebar para los detalles del modelo
+with st.sidebar:
+    st.subheader("Usando un modelo entrenado en Teachable Machine puedes usarlo en esta app para identificar")
 
-stt_button = Button(label="Inicio", width=200)
+# Obtener una imagen de la cámara
+img_file_buffer = st.camera_input("Toma una Foto")
 
-stt_button.js_on_event("button_click", CustomJS(code="""
-    var recognition = new webkitSpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
+if img_file_buffer is not None:
+    # Leer la imagen del buffer
+    img = Image.open(img_file_buffer)
 
-    recognition.onresult = function (e) {
-        var value = "";
-        for (var i = e.resultIndex; i < e.results.length; ++i) {
-            if (e.results[i].isFinal) {
-                value += e.results[i][0].transcript;
-            }
-        }
-        if (value != "") {
-            document.dispatchEvent(new CustomEvent("GET_TEXT", {detail: value}));
-        }
-    }
-    recognition.start();
-"""))
+    # Redimensionar la imagen
+    newsize = (224, 224)
+    img = img.resize(newsize)
 
-# Resultado de la voz capturada
-result = streamlit_bokeh_events(
-    stt_button,
-    events="GET_TEXT",
-    key="listen",
-    refresh_on_update=False,
-    override_height=75,
-    debounce_time=0
-)
+    # Convertir la imagen a un array numpy
+    img_array = np.array(img)
 
-if result:
-    if "GET_TEXT" in result:
-        st.write(result.get("GET_TEXT"))
-        client1.on_publish = on_publish
-        client1.connect(broker, port)
+    # Normalizar la imagen
+    normalized_image_array = (img_array.astype(np.float32) / 127.0) - 1
+    # Cargar la imagen en el array de entrada
+    data[0] = normalized_image_array
 
-        # Publicar el mensaje de voz en el topic MQTT
-        message = json.dumps({"Act1": result.get("GET_TEXT").strip()})
-        ret = client1.publish("voice_ctrl", message)
-
-    # Crear un directorio temporal si no existe
-    try:
-        os.mkdir("temp")
-    except FileExistsError:
-        pass
-        
-        # Agrupar los datos por la columna "Categoría" y sumar las cantidades
-        df_sum = data2.groupby('Categoría')['Cantidad'].sum().reset_index() 
-        st.dataframe(df_sum)  # Mostrar DataFrame en la interfaz
+    # Ejecutar la inferencia
+    prediction = model.predict(data)
+    
+    # Mostrar el resultado basado en la predicción
+    if prediction[0][0] > 0.5:
+        st.header('Izquierda, con Probabilidad: ' + str(prediction[0][0]))
+    if prediction[0][1] > 0.5:
+        st.header('Arriba, con Probabilidad: ' + str(prediction[0][1]))
+    # Descomentar si tienes más categorías
+    # if prediction[0][2] > 0.5:
+    #     st.header('Derecha, con Probabilidad: ' + str(prediction[0][2]))
