@@ -1,20 +1,33 @@
-import cv2
-import yolov5
+import os
 import streamlit as st
-import numpy as np
-import pandas as pd
+from bokeh.models.widgets import Button
+from bokeh.models import CustomJS
+from streamlit_bokeh_events import streamlit_bokeh_events
+from PIL import Image
+import time
+import paho.mqtt.client as paho
+import json
+from googletrans import Translator
 
-# Cargar modelo preentrenado
-model = yolov5.load('yolov5s.pt')
+# Función de callback cuando se publica un mensaje
+def on_publish(client, userdata, result):
+    print("El dato ha sido publicado \n")
+    pass
 
-# Configurar parámetros del modelo
-model.conf = 0.25  # Umbral de confianza para NMS
-model.iou = 0.45   # Umbral de IoU para NMS
-model.agnostic = False  # NMS clase-agnóstica
-model.multi_label = False  # NMS múltiples etiquetas por caja
-model.max_det = 1000  # Número máximo de detecciones por imagen
+# Función de callback para la recepción de mensajes
+def on_message(client, userdata, message):
+    global message_received
+    time.sleep(2)
+    message_received = str(message.payload.decode("utf-8"))
+    st.write(message_received)
 
-# Agregar estilo CSS para las fuentes
+# Configuración de MQTT
+broker = "broker.mqttdashboard.com"
+port = 1883
+client1 = paho.Client("GIT-HUB")
+client1.on_message = on_message
+
+# Agregar estilo CSS para las fuentes y centrar la imagen
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@700&family=Inter:wght@400&display=swap');
@@ -24,65 +37,71 @@ st.markdown("""
         h1, h2, h3, h4, h5, h6 {
             font-family: 'Lexend', sans-serif;
         }
+        .center-img {
+            display: flex;
+            justify-content: center;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Detección de Objetos en Imágenes")
+st.title("INTERFACES MULTIMODALES")
+st.subheader("CONTROL POR VOZ")
 
-with st.sidebar:
-    st.subheader('Parámetros de Configuración')
-    model.iou = st.slider('Seleccione el IoU', 0.0, 1.0)
-    st.write('IOU:', model.iou)
+# Mostrar imagen centrada
+image = Image.open('voice_ctrl.jpg')
+st.markdown('<div class="center-img">', unsafe_allow_html=True)
+st.image(image, width=200)
+st.markdown('</div>', unsafe_allow_html=True)
 
-with st.sidebar:
-    model.conf = st.slider('Seleccione el Confidence', 0.0, 1.0)
-    st.write('Conf:', model.conf)
+# Botón y reconocimiento de voz
+st.write("Toca el Botón y habla")
 
-picture = st.camera_input("Capturar foto", label_visibility='visible')
+stt_button = Button(label="Inicio", width=200)
 
-if picture:
-    bytes_data = picture.getvalue()
-    cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
-  
-    # Realizar inferencia
-    results = model(cv2_img)
+stt_button.js_on_event("button_click", CustomJS(code="""
+    var recognition = new webkitSpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
 
-    # Analizar resultados
-    predictions = results.pred[0]
-    boxes = predictions[:, :4] 
-    scores = predictions[:, 4]
-    categories = predictions[:, 5]
+    recognition.onresult = function (e) {
+        var value = "";
+        for (var i = e.resultIndex; i < e.results.length; ++i) {
+            if (e.results[i].isFinal) {
+                value += e.results[i][0].transcript;
+            }
+        }
+        if (value != "") {
+            document.dispatchEvent(new CustomEvent("GET_TEXT", {detail: value}));
+        }
+    }
+    recognition.start();
+"""))
 
-    col1, col2 = st.columns(2)
+# Resultado de la voz capturada
+result = streamlit_bokeh_events(
+    stt_button,
+    events="GET_TEXT",
+    key="listen",
+    refresh_on_update=False,
+    override_height=75,
+    debounce_time=0
+)
 
-    with col1:
-        # Mostrar cajas de detección en la imagen
-        results.render()
-        # Mostrar imagen con detecciones 
-        st.image(cv2_img, channels='BGR')
+if result:
+    if "GET_TEXT" in result:
+        st.write(result.get("GET_TEXT"))
+        client1.on_publish = on_publish
+        client1.connect(broker, port)
 
-    with col2:      
-        # Obtener nombres de etiquetas
-        label_names = model.names
-        # Contar categorías
-        category_count = {}
-        for category in categories:
-            if category in category_count:
-                category_count[category] += 1
-            else:
-                category_count[category] = 1        
+        # Publicar el mensaje de voz en el topic MQTT
+        message = json.dumps({"Act1": result.get("GET_TEXT").strip()})
+        ret = client1.publish("voice_ctrl", message)
 
-        data = []        
-        # Imprimir conteos y etiquetas de categorías
-        for category, count in category_count.items():
-            label = label_names[int(category)]            
-            data.append({"Categoría": label, "Cantidad": count})
-        data2 = pd.DataFrame(data)
-        
-        # Agrupar los datos por la columna "Categoría" y sumar las cantidades
-        df_sum = data2.groupby('Categoría')['Cantidad'].sum().reset_index() 
-        st.dataframe(df_sum)  # Mostrar DataFrame en la interfaz
-
+    # Crear un directorio temporal si no existe
+    try:
+        os.mkdir("temp")
+    except FileExistsError:
+        pass
         
         # Agrupar los datos por la columna "Categoría" y sumar las cantidades
         df_sum = data2.groupby('Categoría')['Cantidad'].sum().reset_index() 
