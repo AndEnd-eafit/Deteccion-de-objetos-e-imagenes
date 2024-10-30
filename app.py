@@ -6,6 +6,7 @@ import pandas as pd
 git clone <https://github.com/AndEnd-eafit/Deteccion-de-objetos-e-imagenes>
 cd <C:\Users\Usuario\Downloads\Yolov5-main>
 
+pip install -r requirements.txt
 
 wget https://github.com/ultralytics/yolov5/releases/download/v6.1/yolov5s.pt
 #from ultralytics import YOLO
@@ -14,7 +15,6 @@ wget https://github.com/ultralytics/yolov5/releases/download/v6.1/yolov5s.pt
 #sys.path.append('./ultralytics/yolo')
 
 #from utils.checks import check_requirements
-pip install -r requirements.txt
 
 # load pretrained model
 model = yolov5.load('yolov5s.pt')
