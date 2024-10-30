@@ -4,6 +4,9 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 
+pip install opencv-python
+python --version
+
 pip install --upgrade pip
 pip install -r requirements.txt
 
