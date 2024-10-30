@@ -3,10 +3,14 @@ import yolov5
 import streamlit as st
 import numpy as np
 import pandas as pd
+
+pip install --upgrade pip
+pip install -r requirements.txt
+
 git clone <https://github.com/AndEnd-eafit/Deteccion-de-objetos-e-imagenes>
 cd <C:\Users\Usuario\Downloads\Yolov5-main>
 
-pip install -r requirements.txt
+
 
 wget https://github.com/ultralytics/yolov5/releases/download/v6.1/yolov5s.pt
 #from ultralytics import YOLO
