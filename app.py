@@ -39,7 +39,7 @@ st.markdown(
 
 # Imagen inicial
 st.markdown("<div class='centered-img'>", unsafe_allow_html=True)
-image_path = "imagen_inicial.png"  # Cambia por el nombre de tu archivo de imagen
+image_path = "Yoru - Deteccion de objetos e imagenes.png"  # Cambia por el nombre de tu archivo de imagen
 image = Image.open(image_path)
 st.image(image, caption="Imagen inicial", use_column_width=True)
 st.markdown("</div>", unsafe_allow_html=True)
