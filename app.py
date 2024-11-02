@@ -37,13 +37,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Imagen inicial
-st.markdown("<div class='centered-img'>", unsafe_allow_html=True)
-image_path = "Yoru - Deteccion de objetos e imagenes.png"  # Cambia por el nombre de tu archivo de imagen
-image = Image.open(image_path)
-st.image(image, caption="Imagen inicial", use_column_width=True)
-st.markdown("</div>", unsafe_allow_html=True)
-
 # Configuración de YOLOv5
 model = yolov5.load('yolov5s.pt')
 model.conf = 0.25  # Confianza mínima para detección
@@ -54,6 +47,14 @@ model.max_det = 1000  # Máximo de detecciones por imagen
 
 # Título de la aplicación
 st.title("Detección de Objetos en Imágenes")
+
+
+# Imagen inicial
+st.markdown("<div class='centered-img'>", unsafe_allow_html=True)
+image_path = "Yoru - Deteccion de objetos e imagenes.png"  # Cambia por el nombre de tu archivo de imagen
+image = Image.open(image_path)
+st.image(image, caption="Imagen inicial", use_column_width=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 # Parámetros en barra lateral
 with st.sidebar:
