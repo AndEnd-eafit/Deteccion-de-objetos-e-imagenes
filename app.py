@@ -48,6 +48,11 @@ model.max_det = 1000  # Máximo de detecciones por imagen
 # Título de la aplicación
 st.title("Detección de Objetos en Imágenes")
 
+# Parámetros en barra lateral
+with st.sidebar:
+    st.subheader('Parámetros de Configuración')
+    model.iou = st.slider('Seleccione el IoU', 0.0, 1.0)
+    model.conf = st.slider('Seleccione el Confidence', 0.0, 1.0)
 
 # Imagen inicial
 st.markdown("<div class='centered-img'>", unsafe_allow_html=True)
@@ -55,12 +60,6 @@ image_path = "Yoru - Deteccion de objetos e imagenes.png"  # Cambia por el nombr
 image = Image.open(image_path)
 st.image(image, caption="Imagen inicial", use_column_width=True)
 st.markdown("</div>", unsafe_allow_html=True)
-
-# Parámetros en barra lateral
-with st.sidebar:
-    st.subheader('Parámetros de Configuración')
-    model.iou = st.slider('Seleccione el IoU', 0.0, 1.0)
-    model.conf = st.slider('Seleccione el Confidence', 0.0, 1.0)
 
 # Captura de imagen
 picture = st.camera_input("Capturar foto", label_visibility='visible')
